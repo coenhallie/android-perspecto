@@ -149,6 +149,27 @@ class VideoListViewModel : ViewModel() {
             }
         }
     }
+
+    fun deleteVideo(videoId: String, videoUrl: String) {
+        viewModelScope.launch {
+            try {
+                // Optimistically remove from list for better UX
+                val currentVideos = _videos.value
+                _videos.value = currentVideos.filter { it.id != videoId }
+                
+                repository.deleteVideo(videoId, videoUrl)
+                
+                // Ideally we should re-fetch to be sure, but optimistic update is faster.
+                // If it fails, we might want to revert or show error.
+                // For now, let's just re-fetch silently to ensure consistency.
+                fetchData(isRefresh = false) 
+            } catch (e: Exception) {
+                _error.value = "Failed to delete video: ${e.message}"
+                // Revert optimistic update by re-fetching
+                fetchData(isRefresh = false)
+            }
+        }
+    }
 }
 
 data class UiState(

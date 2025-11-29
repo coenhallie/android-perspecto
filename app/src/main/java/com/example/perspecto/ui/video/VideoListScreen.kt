@@ -3,6 +3,8 @@ package com.example.perspecto.ui.video
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
@@ -58,6 +61,14 @@ import coil.compose.AsyncImage
 import coil.decode.VideoFrameDecoder
 import coil.request.ImageRequest
 import coil.request.videoFrameMillis
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.splineBasedDecay
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -119,6 +130,15 @@ fun VideoListScreen(
             }
         }
     }
+
+    // DragValue enum is needed. It might be defined in AnnotationComponents.kt or we can define it here or reuse it.
+    // If it's internal or private in AnnotationComponents, we need to redefine it or make it public.
+    // Let's assume we can reuse it if it's in the same package, or define a local one if needed.
+    // Checking imports... AnnotationComponents is in the same package.
+    
+    // We need to import DragValue if it's not top-level or if it's not imported.
+    // It was defined at the bottom of AnnotationComponents.kt as `enum class DragValue { Start, End }`
+    // Since they are in the same package `com.example.perspecto.ui.video`, it should be available.
 
     Scaffold(
         topBar = {
@@ -189,12 +209,13 @@ fun VideoListScreen(
                         }
                         
                         // Display Videos
-                        items(uiState.videos) { video ->
+                        items(uiState.videos, key = { it.id }) { video ->
                             VideoItem(
                                 name = video.title.ifEmpty { video.name }, // Use title if available, fallback to name
                                 videoUrl = video.url,
                                 annotationCount = video.annotationCount,
-                                onClick = { onVideoClick(video.id) } // Pass video.id (UUID) instead of videoId
+                                onClick = { onVideoClick(video.id) }, // Pass video.id (UUID) instead of videoId
+                                onDelete = { viewModel.deleteVideo(video.id, video.url) }
                             )
                         }
                     }
@@ -261,12 +282,15 @@ fun FolderItem(
     }
 }
 
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun VideoItem(
     name: String,
     videoUrl: String,
     annotationCount: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val context = LocalContext.current
     val imageLoader = ImageLoader.Builder(context)
@@ -275,68 +299,124 @@ fun VideoItem(
         }
         .build()
 
-    Card(
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    
+    val state = androidx.compose.runtime.remember {
+        AnchoredDraggableState(
+            initialValue = DragValue.Start,
+            positionalThreshold = { distance: Float -> distance * 0.5f },
+            velocityThreshold = { with(density) { 100.dp.toPx() } },
+            snapAnimationSpec = tween(),
+            decayAnimationSpec = splineBasedDecay(density)
+        )
+    }
+
+    val anchors = androidx.compose.runtime.remember(density) {
+        DraggableAnchors {
+            DragValue.Start at 0f
+            DragValue.End at with(density) { -100.dp.toPx() } // Reveal width in px
+        }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(anchors) {
+        state.updateAnchors(anchors)
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = MaterialTheme.shapes.large, // Expressive shape
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(
+        // Background (Delete Button)
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp) // Fixed height to prevent it from being too tall
+                .matchParentSize()
+                .background(MaterialTheme.colorScheme.errorContainer, MaterialTheme.shapes.large)
+                .clickable { onDelete() },
+            contentAlignment = Alignment.CenterEnd
         ) {
-            // Video Thumbnail Area (Left)
             Box(
                 modifier = Modifier
-                    .width(140.dp)
-                    .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .width(100.dp)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.Center
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(videoUrl)
-                        .videoFrameMillis(1000) // Capture frame at 1 second
-                        .crossfade(true)
-                        .build(),
-                    imageLoader = imageLoader,
-                    contentDescription = "Video Thumbnail",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
+        }
 
-            // Content Area (Right)
-            Column(
+        // Foreground (Card)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(x = state.offset.takeIf { !it.isNaN() }?.roundToInt() ?: 0, y = 0) }
+                .anchoredDraggable(
+                    state = state,
+                    orientation = Orientation.Horizontal
+                )
+                .clickable { onClick() },
+            shape = MaterialTheme.shapes.large, // Expressive shape
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.Center
+                    .fillMaxWidth()
+                    .height(100.dp) // Fixed height to prevent it from being too tall
             ) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                AssistChip(
-                    onClick = { /* No-op */ },
-                    label = { Text("$annotationCount Annotations") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.List,
-                            contentDescription = null,
-                            modifier = Modifier.size(AssistChipDefaults.IconSize)
-                        )
-                    }
-                )
+                // Video Thumbnail Area (Left)
+                Box(
+                    modifier = Modifier
+                        .width(140.dp)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(videoUrl)
+                            .videoFrameMillis(1000) // Capture frame at 1 second
+                            .crossfade(true)
+                            .build(),
+                        imageLoader = imageLoader,
+                        contentDescription = "Video Thumbnail",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                // Content Area (Right)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    AssistChip(
+                        onClick = { /* No-op */ },
+                        label = { Text("$annotationCount Annotations") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.List,
+                                contentDescription = null,
+                                modifier = Modifier.size(AssistChipDefaults.IconSize)
+                            )
+                        }
+                    )
+                }
             }
         }
     }
