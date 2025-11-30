@@ -30,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -94,6 +95,7 @@ fun VideoListScreen(
 
     if (showSortSheet) {
         androidx.compose.material3.ModalBottomSheet(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
             onDismissRequest = { showSortSheet = false }
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -104,6 +106,7 @@ fun VideoListScreen(
                 )
                 SortOption.values().forEach { option ->
                     ListItem(
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         headlineContent = {
                             Text(
                                 text = when (option) {

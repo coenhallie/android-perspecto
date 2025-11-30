@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -124,94 +125,75 @@ fun AnnotationCardSkeleton() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 0.dp),
+            .height(100.dp), // Match AnnotationCard height
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header Row
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
             ) {
+                // Content Placeholder (2 lines)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .skeletonEffect()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.5f)
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .skeletonEffect()
+                )
+
                 Spacer(modifier = Modifier.weight(1f))
-                // Priority Badge Placeholder
+
+                // Footer Row (Metadata)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Time/Frame Placeholder
+                    Box(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .skeletonEffect()
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Comment Count Badge Placeholder
+                    Box(
+                        modifier = Modifier
+                            .width(40.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .skeletonEffect()
+                    )
+                }
+            }
+
+            // Priority Badge Placeholder (Top Right)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 16.dp, end = 16.dp)
+            ) {
                 Box(
                     modifier = Modifier
                         .width(60.dp)
                         .height(24.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .skeletonEffect()
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                // Comment Count Badge Placeholder
-                Box(
-                    modifier = Modifier
-                        .width(40.dp)
-                        .height(24.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .skeletonEffect()
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Content Placeholder
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(16.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .skeletonEffect()
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .height(16.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .skeletonEffect()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Footer Row (Metadata)
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Time Icon + Text
-                Box(
-                    modifier = Modifier
-                        .size(14.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .skeletonEffect()
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Box(
-                    modifier = Modifier
-                        .width(30.dp)
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .skeletonEffect()
-                )
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Frame Icon + Text
-                Box(
-                    modifier = Modifier
-                        .size(14.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .skeletonEffect()
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Box(
-                    modifier = Modifier
-                        .width(50.dp)
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(RoundedCornerShape(8.dp))
                         .skeletonEffect()
                 )
             }

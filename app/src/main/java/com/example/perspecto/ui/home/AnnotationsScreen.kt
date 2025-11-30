@@ -28,6 +28,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.ListItemDefaults
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +53,7 @@ fun AnnotationsScreen(
 
     if (showSortSheet) {
         androidx.compose.material3.ModalBottomSheet(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
             onDismissRequest = { showSortSheet = false }
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -61,6 +64,7 @@ fun AnnotationsScreen(
                 )
                 AnnotationSortOption.values().forEach { option ->
                     androidx.compose.material3.ListItem(
+                        colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
                         headlineContent = {
                             Text(
                                 text = when (option) {
